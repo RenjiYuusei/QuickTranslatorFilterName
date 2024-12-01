@@ -1,7 +1,7 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.0.3
+ * Phiên bản: 1.0.6
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
  * Cập nhật: 01/12/2024
@@ -32,26 +32,24 @@ const config = {
 	// Danh sách họ hợp lệ
 	familyNames: new Set([
 		// Họ phổ biến 1 chữ
-		'Liễu', 'Lý', 'Nguyễn', 'Trương', 'Vương', 'Lưu', 'Trần', 'Dương', 'Triệu', 'Hoàng', 
-		'Chu', 'Ngô', 'Tôn', 'Lâm', 'Tống', 'Đặng', 'Hàn', 'Phùng', 'Thẩm', 'Tào', 'Diệp', 
-		'Ngụy', 'Tiêu', 'Trình', 'Hứa', 'Đinh', 'Tô', 'Đỗ', 'Phạm', 'Cao', 'Mã', 'Tạ', 'Hồ', 
-		'Từ', 'Quách', 'Cố', 'Nhiếp', 'Thái', 'Đào', 'Bành', 'Trang', 'Khổng', 'Tất', 'Thang', 
-		'Văn', 'Nhâm', 'Phó', 'Nghiêm', 'Kiều', 'Bạch', 'Tôn', 'Cung', 'Tiết', 'Ân', 'Kỷ', 
-		'Thôi', 'Nhan', 'Phương', 'Phù', 'Doãn', 'Thi', 'Tất', 'Hoa', 'Giả', 'Tư', 'Mạc', 
-		'Thẩm', 'Lạc', 'Bùi', 'Châu', 'Chử', 'Đường', 'Giang', 'Hạ', 'Hình', 'Khâu', 'La', 
-		'Lăng', 'Lục', 'Mai', 'Mạnh', 'Nghê', 'Phàn', 'Phí', 'Quản', 'Sài', 'Sử', 'Tân', 
-		'Thái', 'Thẩm', 'Thi', 'Tiền', 'Tô', 'Tống', 'Trác', 'Trịnh', 'Trình', 'Trưởng', 
-		'Tư', 'Ung', 'Vu', 'Vũ', 'Xa', 'Yến', 'Yên',
+		'Liễu', 'Lý', 'Nguyễn', 'Trương', 'Vương', 'Lưu', 'Trần', 'Dương', 'Triệu', 'Hoàng',
+		'Chu', 'Ngô', 'Tôn', 'Lâm', 'Tống', 'Đặng', 'Hàn', 'Phùng', 'Thẩm', 'Tào', 'Diệp',
+		'Ngụy', 'Tiêu', 'Trình', 'Hứa', 'Đinh', 'Tô', 'Đỗ', 'Phạm', 'Cao', 'Mã', 'Tạ', 'Hồ',
+		'Từ', 'Quách', 'Cố', 'Nhiếp', 'Thái', 'Đào', 'Bành', 'Trang', 'Khổng', 'Tất', 'Thang',
+		'Văn', 'Nhâm', 'Phó', 'Nghiêm', 'Kiều', 'Bạch', 'Cung', 'Tiết', 'Ân', 'Kỷ',
+		'Thôi', 'Nhan', 'Phương', 'Phù', 'Doãn', 'Thi', 'Hoa', 'Giả', 'Tư', 'Mạc',
+		'Lạc', 'Bùi', 'Châu', 'Chử', 'Đường', 'Giang', 'Hạ', 'Hình', 'Khâu', 'La',
+		'Lăng', 'Lục', 'Mai', 'Mạnh', 'Nghê', 'Phàn', 'Phí', 'Quản', 'Sài', 'Sử', 'Tân',
+		'Sở', 'Thủy', 'Thạch', 'Trác', 'Trịnh', 'Trưởng', 'Ung', 'Vu', 'Vũ', 'Xa', 'Yến', 'Yên',
 
 		// Họ kép 2 chữ
 		'Âu Dương', 'Tư Mã', 'Đông Phương', 'Tây Môn', 'Độc Cô', 'Thượng Quan', 'Công Tôn',
-		'Dương Quân', 'Đoàn Gia', 'Tô Đại', 'Tô Mộ', 'Mộ Dung', 'Đoàn Gia', 'Tư Không',
-		'Tư Đồ', 'Tư Mã', 'Tư Không', 'Tư Đồ', 'Tư Mã', 'Tư Không', 'Tư Đồ', 'Tư Mã',
-		'Tư Không', 'Tư Đồ', 'Tư Mã', 'Tư Không', 'Tư Đồ', 'Tư Mã', 'Tư Không', 'Tư Đồ',
+		'Dương Quân', 'Đoàn Gia', 'Tô Đại', 'Tô Mộ', 'Mộ Dung', 'Tư Không', 'Tư Đồ', 'Thẩm Thị', 'Thái Sử',
 
 		// Họ 3 chữ
 		'Đông Phương Bất', 'Tây Môn Khánh', 'Nam Cung Mẫn', 'Bắc Quỷ Vương', 'Đông Phương Sóc',
-		'Tây Môn Báo', 'Nam Cung Thường', 'Bắc Cung Điện'
+		'Tây Môn Báo', 'Nam Cung Thường', 'Bắc Cung Điện', 'Đông Phương Vị', 'Tây Môn Phúc',
+		'Nam Cung Kiệt', 'Bắc Cung Thịnh', 'Đông Phương Minh', 'Tây Môn Thắng', 'Nam Cung Anh'
 	]),
 };
 
