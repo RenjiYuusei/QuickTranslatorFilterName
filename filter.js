@@ -1,7 +1,7 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.0.6
+ * Phiên bản: 1.0.8
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
  * Cập nhật: 01/12/2024
@@ -27,7 +27,12 @@ const config = {
 
 	// Độ dài tối thiểu và tối đa của từ Hán Việt
 	minLength: 2, // Tối thiểu 2 chữ
-	maxLength: 3, // Tối Đa 3 chữ
+	maxLength: 4, // Tối Đa 4 chữ
+
+	// Từ cần loại bỏ
+	blacklist: new Set([
+		'Hu Hu', 'A A', 'Ba Ba', 'Ngô Ngô', 'Phiếu Phiếu', 'Suyễn Hu Hu'
+	]),
 
 	// Danh sách họ hợp lệ
 	familyNames: new Set([
@@ -40,7 +45,8 @@ const config = {
 		'Thôi', 'Nhan', 'Phương', 'Phù', 'Doãn', 'Thi', 'Hoa', 'Giả', 'Tư', 'Mạc',
 		'Lạc', 'Bùi', 'Châu', 'Chử', 'Đường', 'Giang', 'Hạ', 'Hình', 'Khâu', 'La',
 		'Lăng', 'Lục', 'Mai', 'Mạnh', 'Nghê', 'Phàn', 'Phí', 'Quản', 'Sài', 'Sử', 'Tân',
-		'Sở', 'Thủy', 'Thạch', 'Trác', 'Trịnh', 'Trưởng', 'Ung', 'Vu', 'Vũ', 'Xa', 'Yến', 'Yên',
+		'Sở', 'Thủy', 'Thạch', 'Trác', 'Trịnh', 'Trưởng', 'Ung', 'Vu', 'Vũ', 'Xa', 'Yến', 'Yên', 'Kế', 'Tá',
+		'Tần',
 
 		// Họ kép 2 chữ
 		'Âu Dương', 'Tư Mã', 'Đông Phương', 'Tây Môn', 'Độc Cô', 'Thượng Quan', 'Công Tôn',
@@ -131,6 +137,11 @@ function hasValidFamilyName(words) {
 	return false;
 }
 
+// Kiểm tra từ có trong blacklist không
+function isBlacklisted(name) {
+	return config.blacklist.has(name);
+}
+
 // Lọc tên nhân vật
 function filterCharacterNames(content) {
 	if (!content) return { names: [], stats: {}, nameMap: new Map() };
@@ -142,6 +153,7 @@ function filterCharacterNames(content) {
 		total: 0,
 		filtered: 0,
 		validNames: 0,
+		blacklisted: 0
 	};
 
 	for (const line of lines) {
@@ -156,6 +168,12 @@ function filterCharacterNames(content) {
 		const [hanViet, phienAm] = trimmedLine.split('=').map(s => s.trim());
 		if (!phienAm || !hanViet) {
 			stats.filtered++;
+			continue;
+		}
+
+		// Kiểm tra blacklist
+		if (isBlacklisted(phienAm)) {
+			stats.blacklisted++;
 			continue;
 		}
 
@@ -220,6 +238,7 @@ async function main() {
 	console.log('\nThống kê:');
 	console.log(`- Tổng số dòng: ${result.stats.total}`);
 	console.log(`- Số dòng đã lọc: ${result.stats.filtered}`);
+	console.log(`- Số từ trong blacklist: ${result.stats.blacklisted}`);
 	console.log(`- Số tên nhân vật hợp lệ: ${result.stats.validNames}`);
 	console.log(`- Số tên nhân vật còn lại: ${result.names.length}`);
 }
