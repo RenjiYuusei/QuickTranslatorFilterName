@@ -1,7 +1,7 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.0.6
+ * Phiên bản: 1.1.0
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
  * Cập nhật: 01/12/2024
@@ -22,39 +22,65 @@ const config = {
 	// File đầu ra sẽ chứa danh sách tên nhân vật đã lọc
 	outputFile: 'result_TenNhanVat.txt',
 
+	// File log lỗi
+	errorLogFile: 'error.log',
+
 	// Encoding của file
 	encoding: 'utf8',
 
 	// Độ dài tối thiểu và tối đa của từ Hán Việt
 	minLength: 2, // Tối thiểu 2 chữ
-	maxLength: 3, // Tối Đa 3 chữ
+	maxLength: 4, // Tối Đa 4 chữ
+
+	// Từ cần loại bỏ
+	blacklist: new Set([
+		'Hu Hu', 'A A', 'Ba Ba', 'Ngô Ngô', 'Phiếu Phiếu', 'Suyễn Hu Hu',
+		'O S', 'B O', 'S S', 'B O S', 'O S S' // Thêm các từ viết tắt
+	]),
 
 	// Danh sách họ hợp lệ
 	familyNames: new Set([
 		// Họ phổ biến 1 chữ
 		'Liễu', 'Lý', 'Nguyễn', 'Trương', 'Vương', 'Lưu', 'Trần', 'Dương', 'Triệu', 'Hoàng',
 		'Chu', 'Ngô', 'Tôn', 'Lâm', 'Tống', 'Đặng', 'Hàn', 'Phùng', 'Thẩm', 'Tào', 'Diệp',
-		'Ngụy', 'Tiêu', 'Trình', 'Hứa', 'Đinh', 'Tô', 'Đỗ', 'Phạm', 'Cao', 'Mã', 'Tạ', 'Hồ',
-		'Từ', 'Quách', 'Cố', 'Nhiếp', 'Thái', 'Đào', 'Bành', 'Trang', 'Khổng', 'Tất', 'Thang',
-		'Văn', 'Nhâm', 'Phó', 'Nghiêm', 'Kiều', 'Bạch', 'Cung', 'Tiết', 'Ân', 'Kỷ',
+		'Ngụy', 'Tiêu', 'Trình', 'Hứa', 'Đinh', 'Tô', 'Đỗ', 'Phạm', 'Tạ', 'Hồ',
+		'Từ', 'Quách', 'Cố', 'Nhiếp', 'Thái', 'Đào', 'Bành', 'Khổng', 
+		'Văn', 'Nhâm', 'Phó', 'Nghiêm', 'Kiều', 'Bạch', 'Cung', 'Tiết', 'Kỷ',
 		'Thôi', 'Nhan', 'Phương', 'Phù', 'Doãn', 'Thi', 'Hoa', 'Giả', 'Tư', 'Mạc',
-		'Lạc', 'Bùi', 'Châu', 'Chử', 'Đường', 'Giang', 'Hạ', 'Hình', 'Khâu', 'La',
-		'Lăng', 'Lục', 'Mai', 'Mạnh', 'Nghê', 'Phàn', 'Phí', 'Quản', 'Sài', 'Sử', 'Tân',
-		'Sở', 'Thủy', 'Thạch', 'Trác', 'Trịnh', 'Trưởng', 'Ung', 'Vu', 'Vũ', 'Xa', 'Yến', 'Yên',
-
+		'Lạc', 'Bùi', 'Châu', 'Đường', 'Giang', 'Hạ', 'La',
+		'Lăng', 'Lục', 'Mai', 'Mạnh', 'Nghê', 
+		'Sở', 'Thủy', 'Thạch', 'Trác', 'Trịnh', 'Yến', 'Yên', 'Kế', 'Tá',
+		'Tần', 'An', 'Biện', 'Chung', 'Đoàn', 'Hà', 'Khương', 'Lê', 'Lương', 'Mẫn', 'Ninh',
+		'Đàm', 'Cảnh', 'Chiêm', 'Đan', 'Đậu',
+		'Điền', 'Đổng', 'Đới', 'Hoa', 'Hoắc', 'Lãnh', 'Lôi', 'Mạch', 'Mộc',
+		'Nhạc', 'Phi', 'Phong', 'Bối', 'Cốc', 'Hàn','Cúc' ,// Thêm họ mới
 		// Họ kép 2 chữ
-		'Âu Dương', 'Tư Mã', 'Đông Phương', 'Tây Môn', 'Độc Cô', 'Thượng Quan', 'Công Tôn',
+		'Âu Dương', 'Tư Mã', 'Độc Cô', 'Thượng Quan', 'Công Tôn',
 		'Dương Quân', 'Đoàn Gia', 'Tô Đại', 'Tô Mộ', 'Mộ Dung', 'Tư Không', 'Tư Đồ', 'Thẩm Thị', 'Thái Sử',
+		'Bắc Cung', 'Bạch Khởi', 'Bàng Cử', 'Cảnh Dương', 'Cố Duy', 'Đại Tư', 'Đào Hoa',
+		'Đinh Lan', 'Đông Môn', 'Đổng Trọng', 'Hạ Hầu', 'Hàn Quang', 'Hoa Đà', 'Hoài Nam',
+		'Kim Thường', 'Lâm Phụng', 'Lý Quang', 'Nam Cung', 'Ngô Việt', 'Nhậm Thiên', 'Phạm Lãi',
+		'Phùng Dị', 'Quách Phụng', 'Sài Vinh', 'Tào Tháo', 'Thái Bạch', 'Thẩm Phác', 'Tiêu Hà',
+		'Tô Tần', 'Tôn Tẫn', 'Trác Nhân', 'Trần Bình', 'Trịnh Xuân', 'Trương Lương', 'Vạn Lý',
 
 		// Họ 3 chữ
 		'Đông Phương Bất', 'Tây Môn Khánh', 'Nam Cung Mẫn', 'Bắc Quỷ Vương', 'Đông Phương Sóc',
 		'Tây Môn Báo', 'Nam Cung Thường', 'Bắc Cung Điện', 'Đông Phương Vị', 'Tây Môn Phúc',
-		'Nam Cung Kiệt', 'Bắc Cung Thịnh', 'Đông Phương Minh', 'Tây Môn Thắng', 'Nam Cung Anh'
+		'Nam Cung Kiệt', 'Bắc Cung Thịnh', 'Đông Phương Minh', 'Tây Môn Thắng', 'Nam Cung Anh',
+		'Bắc Cung Tinh', 'Đông Phương Quân', 'Nam Cung Thắng', 'Tây Môn Vũ', 'Bắc Cung Văn',
+		'Đông Phương Hạ', 'Nam Cung Khánh', 'Tây Môn Kiệt', 'Bắc Cung Minh', 'Đông Phương Thịnh'
 	]),
 };
 
 // !!! CẢNH BÁO: KHÔNG CHỈNH SỬA CODE DƯỚI PHẦN NÀY !!!
 // Các hàm xử lý chính của tool
+
+// Ghi log lỗi
+function logError(error) {
+	const timestamp = new Date().toISOString();
+	const logMessage = `[${timestamp}] ${error.message}\n`;
+	fs.appendFileSync(config.errorLogFile, logMessage);
+}
 
 // Đọc file
 function readFile(filePath) {
@@ -64,6 +90,7 @@ function readFile(filePath) {
 		}
 		return fs.readFileSync(filePath, config.encoding);
 	} catch (err) {
+		logError(err);
 		console.error('Lỗi khi đọc file:', err.message);
 		process.exit(1);
 	}
@@ -78,6 +105,7 @@ function writeFile(filePath, content) {
 		}
 		fs.writeFileSync(filePath, content, config.encoding);
 	} catch (err) {
+		logError(err);
 		console.error('Lỗi khi ghi file:', err.message);
 		process.exit(1);
 	}
@@ -89,7 +117,9 @@ function normalizeName(name) {
 		.toLowerCase()
 		.normalize('NFD')
 		.replace(/[\u0300-\u036f]/g, '')
-		.replace(/đ/g, 'd');
+		.replace(/đ/g, 'd')
+		.replace(/\s+/g, ' ') // Xóa khoảng trắng thừa
+		.trim();
 }
 
 // Kiểm tra tên riêng
@@ -104,6 +134,12 @@ function isProperName(word) {
 
 	// Kiểm tra không chứa số hoặc ký tự đặc biệt
 	if (/[\d\W]/.test(firstChar)) {
+		return false;
+	}
+
+	// Kiểm tra các ký tự còn lại
+	const restOfWord = word.slice(1);
+	if (/[^a-zA-ZÀ-ỹ\s]/.test(restOfWord)) {
 		return false;
 	}
 
@@ -128,7 +164,21 @@ function hasValidFamilyName(words) {
 		if (config.familyNames.has(doubleFamilyName)) return true;
 	}
 
+	// Kiểm tra họ 3 chữ
+	if (words.length >= 3) {
+		const tripleFamilyName = words.slice(0, 3).join(' ');
+		if (config.familyNames.has(tripleFamilyName)) return true;
+	}
+
 	return false;
+}
+
+// Kiểm tra từ có trong blacklist không
+function isBlacklisted(name) {
+	const normalizedName = normalizeName(name);
+	return Array.from(config.blacklist).some(blacklistedWord => 
+		normalizedName.includes(normalizeName(blacklistedWord))
+	);
 }
 
 // Lọc tên nhân vật
@@ -142,6 +192,8 @@ function filterCharacterNames(content) {
 		total: 0,
 		filtered: 0,
 		validNames: 0,
+		blacklisted: 0,
+		duplicates: 0
 	};
 
 	for (const line of lines) {
@@ -156,6 +208,12 @@ function filterCharacterNames(content) {
 		const [hanViet, phienAm] = trimmedLine.split('=').map(s => s.trim());
 		if (!phienAm || !hanViet) {
 			stats.filtered++;
+			continue;
+		}
+
+		// Kiểm tra blacklist
+		if (isBlacklisted(phienAm)) {
+			stats.blacklisted++;
 			continue;
 		}
 
@@ -180,6 +238,12 @@ function filterCharacterNames(content) {
 			continue;
 		}
 
+		// Kiểm tra trùng lặp
+		if (characterNames.has(phienAm)) {
+			stats.duplicates++;
+			continue;
+		}
+
 		// Thêm tên vào Set để loại bỏ trùng lặp
 		characterNames.add(phienAm);
 		stats.validNames++;
@@ -189,7 +253,9 @@ function filterCharacterNames(content) {
 	}
 
 	// Chuyển Set thành mảng và sắp xếp theo alphabet
-	const sortedNames = Array.from(characterNames).sort();
+	const sortedNames = Array.from(characterNames).sort((a, b) => 
+		normalizeName(a).localeCompare(normalizeName(b))
+	);
 
 	return {
 		names: sortedNames.map(name => ({
@@ -220,11 +286,14 @@ async function main() {
 	console.log('\nThống kê:');
 	console.log(`- Tổng số dòng: ${result.stats.total}`);
 	console.log(`- Số dòng đã lọc: ${result.stats.filtered}`);
+	console.log(`- Số từ trong blacklist: ${result.stats.blacklisted}`);
+	console.log(`- Số tên trùng lặp: ${result.stats.duplicates}`);
 	console.log(`- Số tên nhân vật hợp lệ: ${result.stats.validNames}`);
 	console.log(`- Số tên nhân vật còn lại: ${result.names.length}`);
 }
 
 main().catch(err => {
+	logError(err);
 	console.error('Lỗi:', err.message);
 	process.exit(1);
 });
