@@ -2,7 +2,7 @@
 
 > Tool lọc tên nhân vật từ file text cho QuickTranslate - TangThuVien
 
-[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/daolucdev/filter-character-names)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/RenjiYuusei/QuickTranslatorFilterName)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
