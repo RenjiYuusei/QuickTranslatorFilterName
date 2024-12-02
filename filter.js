@@ -1,7 +1,7 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.2.1
+ * Phiên bản: 1.2.2
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
  * Cập nhật: 02/12/2024
@@ -160,6 +160,7 @@ const config = {
 		'Vân',
 		'Mô',
 		'Mao',
+		'Quan',
 	]),
 };
 
