@@ -1,7 +1,7 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.2.2
+ * Phiên bản: 1.2.3
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
  * Cập nhật: 02/12/2024
@@ -34,6 +34,9 @@ const config = {
 
 	// Từ cần loại bỏ
 	blacklist: new Set([
+		'Côn Thịt',
+		'Nhũ Căn',
+		'Âm Huyệt',
 		'Hu Hu',
 		'A A',
 		'Ba Ba',
