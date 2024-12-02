@@ -1,10 +1,10 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.2.3
+ * Phiên bản: 1.3.0
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
- * Cập nhật: 02/12/2024
+ * Cập nhật: 03/12/2024
  * !!! CẢNH BÁO !!!
  * Đoạn code bên dưới phần config rất quan trọng,
  * nếu không biết code xin đừng chỉnh sửa vì sẽ gây lỗi tool.
@@ -18,9 +18,13 @@ const path = require('path');
 const config = {
 	// File đầu vào chứa danh sách các từ cần lọc
 	inputFile: 'result_TheoĐộDài_ViếtHoa.txt',
+	// Hoặc result_TheoTầnSuất_ViếtHoa.txt ( khuyến khích dùng result_TheoĐộDài_ViếtHoa.txt hơn)
 
 	// File đầu ra sẽ chứa danh sách tên nhân vật đã lọc
-	outputFile: 'result_TenNhanVat.txt',
+	outputFile: 'result_TênNhênVật.txt',
+
+	// File Names.txt chứa danh sách tên đã có
+	namesFile: 'Names.txt',
 
 	// File log lỗi
 	errorLogFile: 'error.log',
@@ -30,10 +34,12 @@ const config = {
 
 	// Độ dài tối thiểu và tối đa của từ Hán Việt
 	minLength: 2, // Tối thiểu 2 chữ
-	maxLength: 3, // Tối Đa 3 chữ
+	maxLength: 3, // Tối Đa 3 chữ (hoặc 4 chữ)
 
 	// Từ cần loại bỏ
 	blacklist: new Set([
+		'Hoa Hạ',
+		'Long Quốc',
 		'Côn Thịt',
 		'Nhũ Căn',
 		'Âm Huyệt',
@@ -45,6 +51,27 @@ const config = {
 		'S S',
 		'B O S',
 		'O S S',
+		'Nga Nga',
+		'Nga Nga Nga',
+		'Nga Nga Nga Nga',
+		'Nga Nga Nga Nga Nga',
+		'Úc Úc',
+		'Úc Nga',
+		'Úc Úc Nga',
+		'Úc Úc Úc',
+		'Úc Úc Úc Nga',
+		'Ân Nga',
+		'Y Nga',
+		'Y Úc',
+		'Tại Hắc',
+		'Bị Hắc',
+		'Mị Hắc',
+		'Tại Đường',
+		'Tại Tha',
+		'Tại Giá',
+		'Trứ Tha',
+		'Trứ Đường',
+		'Nhượng Đường'
 	]),
 
 	// Danh sách họ hợp lệ
@@ -164,6 +191,7 @@ const config = {
 		'Mô',
 		'Mao',
 		'Quan',
+		'Sa',
 	]),
 };
 
@@ -206,17 +234,6 @@ function writeFile(filePath, content) {
 	}
 }
 
-// Chuẩn hóa tên
-function normalizeName(name) {
-	return name
-		.toLowerCase()
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '')
-		.replace(/đ/g, 'd')
-		.replace(/\s+/g, ' ') // Xóa khoảng trắng thừa
-		.trim();
-}
-
 // Kiểm tra tên riêng
 function isProperName(word) {
 	if (!word || typeof word !== 'string') return false;
@@ -224,17 +241,6 @@ function isProperName(word) {
 	// Kiểm tra chữ cái đầu viết hoa
 	const firstChar = word.charAt(0);
 	if (firstChar !== firstChar.toUpperCase() || firstChar === firstChar.toLowerCase()) {
-		return false;
-	}
-
-	// Kiểm tra không chứa số hoặc ký tự đặc biệt
-	if (/[\d\W]/.test(firstChar)) {
-		return false;
-	}
-
-	// Kiểm tra các ký tự còn lại
-	const restOfWord = word.slice(1);
-	if (/[^a-zA-ZÀ-ỹ\s]/.test(restOfWord)) {
 		return false;
 	}
 
@@ -251,12 +257,20 @@ function hasValidFamilyName(words) {
 	if (!words || !words.length) return false;
 
 	// Kiểm tra họ đơn
-	if (config.FamilyName.has(words[0])) return true;
+	if (config.FamilyName.has(words[0])) {
+		// Kiểm tra xem có phải là tên đơn lẻ không
+		if (words.length === 1) return false;
+		return true;
+	}
 
 	// Kiểm tra họ kép
 	if (words.length >= 2) {
 		const doubleFamilyName = words[0] + ' ' + words[1];
-		if (config.FamilyName.has(doubleFamilyName)) return true;
+		if (config.FamilyName.has(doubleFamilyName)) {
+			// Kiểm tra xem có phải là tên đơn lẻ không
+			if (words.length === 2) return false;
+			return true;
+		}
 	}
 
 	return false;
@@ -264,8 +278,30 @@ function hasValidFamilyName(words) {
 
 // Kiểm tra từ có trong blacklist không
 function isBlacklisted(name) {
-	const normalizedName = normalizeName(name);
-	return Array.from(config.blacklist).some(blacklistedWord => normalizedName.includes(normalizeName(blacklistedWord)));
+	return Array.from(config.blacklist).some(blacklistedWord => {
+		return name === blacklistedWord || name.includes(blacklistedWord);
+	});
+}
+
+// Đọc danh sách tên đã có từ Names.txt
+function getExistingNames() {
+	try {
+		const namesContent = readFile(config.namesFile);
+		const existingNames = new Set();
+		const lines = namesContent.split('\n');
+
+		for (const line of lines) {
+			const [hanViet, phienAm] = line.split('=').map(s => s?.trim());
+			if (hanViet && phienAm) {
+				existingNames.add(`${hanViet}=${phienAm}`);
+			}
+		}
+
+		return existingNames;
+	} catch (err) {
+		console.log('Không tìm thấy file Names.txt hoặc file rỗng');
+		return new Set();
+	}
 }
 
 // Lọc tên nhân vật
@@ -275,12 +311,15 @@ function filterCharacterNames(content) {
 	const lines = content.split('\n');
 	const characterNames = new Set(); // Dùng Set để lưu tên duy nhất
 	const nameMap = new Map(); // Map để lưu tên Trung - Việt
+	const existingNames = getExistingNames();
+
 	const stats = {
 		total: 0,
 		filtered: 0,
 		validNames: 0,
 		blacklisted: 0,
 		duplicates: 0,
+		existingNames: 0
 	};
 
 	for (const line of lines) {
@@ -295,6 +334,12 @@ function filterCharacterNames(content) {
 		const [hanViet, phienAm] = trimmedLine.split('=').map(s => s.trim());
 		if (!phienAm || !hanViet) {
 			stats.filtered++;
+			continue;
+		}
+
+		// Kiểm tra xem tên đã tồn tại trong Names.txt chưa
+		if (existingNames.has(`${hanViet}=${phienAm}`)) {
+			stats.existingNames++;
 			continue;
 		}
 
@@ -340,7 +385,7 @@ function filterCharacterNames(content) {
 	}
 
 	// Chuyển Set thành mảng và sắp xếp theo alphabet
-	const sortedNames = Array.from(characterNames).sort((a, b) => normalizeName(a).localeCompare(normalizeName(b)));
+	const sortedNames = Array.from(characterNames).sort();
 
 	return {
 		names: sortedNames.map(name => ({
@@ -373,6 +418,7 @@ async function main() {
 	console.log(`- Số dòng đã lọc: ${result.stats.filtered}`);
 	console.log(`- Số từ trong blacklist: ${result.stats.blacklisted}`);
 	console.log(`- Số tên trùng lặp: ${result.stats.duplicates}`);
+	console.log(`- Số tên đã tồn tại trong Names.txt: ${result.stats.existingNames}`);
 	console.log(`- Số tên nhân vật hợp lệ: ${result.stats.validNames}`);
 	console.log(`- Số tên nhân vật còn lại: ${result.names.length}`);
 }
