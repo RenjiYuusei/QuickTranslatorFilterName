@@ -1,10 +1,10 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.1.0
+ * Phiên bản: 1.2.1
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
- * Cập nhật: 01/12/2024
+ * Cập nhật: 02/12/2024
  * !!! CẢNH BÁO !!!
  * Đoạn code bên dưới phần config rất quan trọng,
  * nếu không biết code xin đừng chỉnh sửa vì sẽ gây lỗi tool.
@@ -30,45 +30,136 @@ const config = {
 
 	// Độ dài tối thiểu và tối đa của từ Hán Việt
 	minLength: 2, // Tối thiểu 2 chữ
-	maxLength: 4, // Tối Đa 4 chữ
+	maxLength: 3, // Tối Đa 3 chữ
 
 	// Từ cần loại bỏ
 	blacklist: new Set([
-		'Hu Hu', 'A A', 'Ba Ba', 'Ngô Ngô', 'Phiếu Phiếu', 'Suyễn Hu Hu',
-		'O S', 'B O', 'S S', 'B O S', 'O S S' // Thêm các từ viết tắt
+		'Hu Hu',
+		'A A',
+		'Ba Ba',
+		'O S',
+		'B O',
+		'S S',
+		'B O S',
+		'O S S',
 	]),
 
 	// Danh sách họ hợp lệ
-	familyNames: new Set([
-		// Họ phổ biến 1 chữ
-		'Liễu', 'Lý', 'Nguyễn', 'Trương', 'Vương', 'Lưu', 'Trần', 'Dương', 'Triệu', 'Hoàng',
-		'Chu', 'Ngô', 'Tôn', 'Lâm', 'Tống', 'Đặng', 'Hàn', 'Phùng', 'Thẩm', 'Tào', 'Diệp',
-		'Ngụy', 'Tiêu', 'Trình', 'Hứa', 'Đinh', 'Tô', 'Đỗ', 'Phạm', 'Tạ', 'Hồ',
-		'Từ', 'Quách', 'Cố', 'Nhiếp', 'Thái', 'Đào', 'Bành', 'Khổng', 
-		'Văn', 'Nhâm', 'Phó', 'Nghiêm', 'Kiều', 'Bạch', 'Cung', 'Tiết', 'Kỷ',
-		'Thôi', 'Nhan', 'Phương', 'Phù', 'Doãn', 'Thi', 'Hoa', 'Giả', 'Tư', 'Mạc',
-		'Lạc', 'Bùi', 'Châu', 'Đường', 'Giang', 'Hạ', 'La',
-		'Lăng', 'Lục', 'Mai', 'Mạnh', 'Nghê', 
-		'Sở', 'Thủy', 'Thạch', 'Trác', 'Trịnh', 'Yến', 'Yên', 'Kế', 'Tá',
-		'Tần', 'An', 'Biện', 'Chung', 'Đoàn', 'Hà', 'Khương', 'Lê', 'Lương', 'Mẫn', 'Ninh',
-		'Đàm', 'Cảnh', 'Chiêm', 'Đan', 'Đậu',
-		'Điền', 'Đổng', 'Đới', 'Hoa', 'Hoắc', 'Lãnh', 'Lôi', 'Mạch', 'Mộc',
-		'Nhạc', 'Phi', 'Phong', 'Bối', 'Cốc', 'Hàn','Cúc' ,// Thêm họ mới
-		// Họ kép 2 chữ
-		'Âu Dương', 'Tư Mã', 'Độc Cô', 'Thượng Quan', 'Công Tôn',
-		'Dương Quân', 'Đoàn Gia', 'Tô Đại', 'Tô Mộ', 'Mộ Dung', 'Tư Không', 'Tư Đồ', 'Thẩm Thị', 'Thái Sử',
-		'Bắc Cung', 'Bạch Khởi', 'Bàng Cử', 'Cảnh Dương', 'Cố Duy', 'Đại Tư', 'Đào Hoa',
-		'Đinh Lan', 'Đông Môn', 'Đổng Trọng', 'Hạ Hầu', 'Hàn Quang', 'Hoa Đà', 'Hoài Nam',
-		'Kim Thường', 'Lâm Phụng', 'Lý Quang', 'Nam Cung', 'Ngô Việt', 'Nhậm Thiên', 'Phạm Lãi',
-		'Phùng Dị', 'Quách Phụng', 'Sài Vinh', 'Tào Tháo', 'Thái Bạch', 'Thẩm Phác', 'Tiêu Hà',
-		'Tô Tần', 'Tôn Tẫn', 'Trác Nhân', 'Trần Bình', 'Trịnh Xuân', 'Trương Lương', 'Vạn Lý',
-
-		// Họ 3 chữ
-		'Đông Phương Bất', 'Tây Môn Khánh', 'Nam Cung Mẫn', 'Bắc Quỷ Vương', 'Đông Phương Sóc',
-		'Tây Môn Báo', 'Nam Cung Thường', 'Bắc Cung Điện', 'Đông Phương Vị', 'Tây Môn Phúc',
-		'Nam Cung Kiệt', 'Bắc Cung Thịnh', 'Đông Phương Minh', 'Tây Môn Thắng', 'Nam Cung Anh',
-		'Bắc Cung Tinh', 'Đông Phương Quân', 'Nam Cung Thắng', 'Tây Môn Vũ', 'Bắc Cung Văn',
-		'Đông Phương Hạ', 'Nam Cung Khánh', 'Tây Môn Kiệt', 'Bắc Cung Minh', 'Đông Phương Thịnh'
+	FamilyName: new Set([
+		'Liễu',
+		'Lý',
+		'Nguyễn',
+		'Trương',
+		'Vương',
+		'Lưu',
+		'Trần',
+		'Dương',
+		'Triệu',
+		'Hoàng',
+		'Chu',
+		'Ngô',
+		'Tôn',
+		'Lâm',
+		'Tống',
+		'Đặng',
+		'Hàn',
+		'Phùng',
+		'Thẩm',
+		'Tào',
+		'Diệp',
+		'Ngụy',
+		'Tiêu',
+		'Trình',
+		'Hứa',
+		'Đinh',
+		'Tô',
+		'Đỗ',
+		'Phạm',
+		'Tạ',
+		'Hồ',
+		'Từ',
+		'Quách',
+		'Cố',
+		'Nhiếp',
+		'Thái',
+		'Đào',
+		'Bành',
+		'Khổng',
+		'Văn',
+		'Nhâm',
+		'Phó',
+		'Nghiêm',
+		'Kiều',
+		'Bạch',
+		'Cung',
+		'Tiết',
+		'Kỷ',
+		'Thôi',
+		'Nhan',
+		'Phương',
+		'Phù',
+		'Doãn',
+		'Thi',
+		'Hoa',
+		'Giả',
+		'Tư',
+		'Mạc',
+		'Lạc',
+		'Bùi',
+		'Châu',
+		'Đường',
+		'Giang',
+		'Hạ',
+		'La',
+		'Lăng',
+		'Lục',
+		'Mai',
+		'Mạnh',
+		'Nghê',
+		'Sở',
+		'Thủy',
+		'Thạch',
+		'Trác',
+		'Trịnh',
+		'Yến',
+		'Yên',
+		'Kế',
+		'Tá',
+		'Tần',
+		'An',
+		'Biện',
+		'Chung',
+		'Đoàn',
+		'Hà',
+		'Khương',
+		'Lê',
+		'Lương',
+		'Mẫn',
+		'Ninh',
+		'Đàm',
+		'Cảnh',
+		'Chiêm',
+		'Đan',
+		'Đậu',
+		'Điền',
+		'Đổng',
+		'Đới',
+		'Hoa',
+		'Hoắc',
+		'Lãnh',
+		'Lôi',
+		'Mạch',
+		'Mộc',
+		'Nhạc',
+		'Phi',
+		'Phong',
+		'Bối',
+		'Cốc',
+		'Hàn',
+		'Cúc',
+		'Vân',
+		'Mô',
+		'Mao',
 	]),
 };
 
@@ -156,18 +247,12 @@ function hasValidFamilyName(words) {
 	if (!words || !words.length) return false;
 
 	// Kiểm tra họ đơn
-	if (config.familyNames.has(words[0])) return true;
+	if (config.FamilyName.has(words[0])) return true;
 
-	// Kiểm tra họ kép (2 từ đầu)
+	// Kiểm tra họ kép
 	if (words.length >= 2) {
-		const doubleFamilyName = words.slice(0, 2).join(' ');
-		if (config.familyNames.has(doubleFamilyName)) return true;
-	}
-
-	// Kiểm tra họ 3 chữ
-	if (words.length >= 3) {
-		const tripleFamilyName = words.slice(0, 3).join(' ');
-		if (config.familyNames.has(tripleFamilyName)) return true;
+		const doubleFamilyName = words[0] + ' ' + words[1];
+		if (config.FamilyName.has(doubleFamilyName)) return true;
 	}
 
 	return false;
@@ -176,9 +261,7 @@ function hasValidFamilyName(words) {
 // Kiểm tra từ có trong blacklist không
 function isBlacklisted(name) {
 	const normalizedName = normalizeName(name);
-	return Array.from(config.blacklist).some(blacklistedWord => 
-		normalizedName.includes(normalizeName(blacklistedWord))
-	);
+	return Array.from(config.blacklist).some(blacklistedWord => normalizedName.includes(normalizeName(blacklistedWord)));
 }
 
 // Lọc tên nhân vật
@@ -193,7 +276,7 @@ function filterCharacterNames(content) {
 		filtered: 0,
 		validNames: 0,
 		blacklisted: 0,
-		duplicates: 0
+		duplicates: 0,
 	};
 
 	for (const line of lines) {
@@ -253,9 +336,7 @@ function filterCharacterNames(content) {
 	}
 
 	// Chuyển Set thành mảng và sắp xếp theo alphabet
-	const sortedNames = Array.from(characterNames).sort((a, b) => 
-		normalizeName(a).localeCompare(normalizeName(b))
-	);
+	const sortedNames = Array.from(characterNames).sort((a, b) => normalizeName(a).localeCompare(normalizeName(b)));
 
 	return {
 		names: sortedNames.map(name => ({
