@@ -1,10 +1,10 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.3.1
+ * Phiên bản: 1.3.5
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
- * Cập nhật: 03/12/2024
+ * Cập nhật: 04/12/2024
  * !!! CẢNH BÁO !!!
  * Đoạn code bên dưới phần config rất quan trọng,
  * nếu không biết code xin đừng chỉnh sửa vì sẽ gây lỗi tool.
@@ -17,11 +17,11 @@ const path = require('path');
 // Cấu hình - Có thể chỉnh sửa phần này
 const config = {
 	// File đầu vào chứa danh sách các từ cần lọc
-	inputFile: './result_TheoĐộDài_ViếtHoa.txt',
-	// Hoặc result_TheoTầnSuất_ViếtHoa.txt ( khuyến khích dùng result_TheoĐộDài_ViếtHoa.txt hơn)
+	inputFile: './result_TheoTầnSuất_ViếtHoa.txt',
+	// Hoặc result_TheoĐộDài_ViếtHoa.txt ( khuyến khích dùng result_TầnSuất_ViếtHoa.txt hơn)
 
 	// File đầu ra sẽ chứa danh sách tên nhân vật đã lọc
-	outputFile: './result_TênNhênVật.txt',
+	outputFile: './result_TênNhânVật.txt',
 
 	// File Names.txt chứa danh sách tên đã có
 	namesFile: './Names.txt',
@@ -36,11 +36,190 @@ const config = {
 	minLength: 2, // Tối thiểu 2 chữ
 	maxLength: 3, // Tối Đa 3 chữ (hoặc 4 chữ)
 
-	// Từ cần loại bỏ
-	blacklist: new Set(['Hoa Hạ', 'Long Quốc', 'Côn Thịt', 'Nhũ Căn', 'Âm Huyệt', 'Hu Hu', 'A A', 'Ba Ba', 'O S', 'B O', 'S S', 'B O S', 'O S S', 'Nga Nga', 'Nga Nga Nga', 'Nga Nga Nga Nga', 'Nga Nga Nga Nga Nga', 'Úc Úc', 'Úc Nga', 'Úc Úc Nga', 'Úc Úc Úc', 'Úc Úc Úc Nga', 'Ân Nga', 'Y Nga', 'Y Úc', 'Tại Hắc', 'Bị Hắc', 'Mị Hắc', 'Tại Đường', 'Tại Tha', 'Tại Giá', 'Trứ Tha', 'Trứ Đường', 'Nhượng Đường', 'Hắc Nhân', 'Kê Ba', 'Tẩy Não', 'Tiểu Huyệt', 'Xúc Thủ', 'Nhục Bổng', 'Mỹ Thối', 'Dâm Động', 'Nội Xạ', 'Xuất Tinh', 'Dâm Mị']),
+	// Regex blacklist - Đơn giản hóa để dễ chỉnh sửa
+	blacklistWords: [
+		// Từ lặp lại
+		'A A',
+		'Ngô Ngô Ngô',
+		// Địa danh
+		'Hoa Hạ',
+		'Long Quốc',
 
-	// Danh sách họ hợp lệ
-	FamilyName: new Set(['Liễu', 'Lý', 'Nguyễn', 'Trương', 'Vương', 'Lưu', 'Trần', 'Dương', 'Triệu', 'Hoàng', 'Chu', 'Ngô', 'Tôn', 'Lâm', 'Tống', 'Đặng', 'Hàn', 'Phùng', 'Thẩm', 'Tào', 'Diệp', 'Ngụy', 'Tiêu', 'Trình', 'Hứa', 'Đinh', 'Tô', 'Đỗ', 'Phạm', 'Tạ', 'Hồ', 'Từ', 'Quách', 'Cố', 'Nhiếp', 'Thái', 'Đào', 'Bành', 'Khổng', 'Văn', 'Nhâm', 'Phó', 'Nghiêm', 'Kiều', 'Bạch', 'Cung', 'Tiết', 'Kỷ', 'Thôi', 'Nhan', 'Phương', 'Phù', 'Doãn', 'Thi', 'Hoa', 'Giả', 'Tư', 'Mạc', 'Lạc', 'Bùi', 'Châu', 'Đường', 'Giang', 'Hạ', 'La', 'Lăng', 'Lục', 'Mai', 'Mạnh', 'Nghê', 'Sở', 'Thủy', 'Thạch', 'Trác', 'Trịnh', 'Yến', 'Yên', 'Kế', 'Tá', 'Tần', 'An', 'Biện', 'Chung', 'Đoàn', 'Hà', 'Khương', 'Lê', 'Lương', 'Mẫn', 'Ninh', 'Đàm', 'Cảnh', 'Chiêm', 'Đan', 'Đậu', 'Điền', 'Đổng', 'Đới', 'Hoa', 'Hoắc', 'Lãnh', 'Lôi', 'Mạch', 'Mộc', 'Nhạc', 'Phi', 'Phong', 'Bối', 'Cốc', 'Hàn', 'Cúc', 'Vân', 'Mô', 'Mao', 'Quan', 'Sa']),
+		// Từ tục tĩu
+		'Chó Cái',
+		'Đĩ Cái',
+		'Đĩ',
+		'Côn Thịt',
+		'Nhũ Căn',
+		'Âm Huyệt',
+		'Tiểu Huyệt',
+		'Nhục Bổng',
+		'Dâm Động',
+		'Dâm Mị',
+		'Nội Xạ',
+		'Xuất Tinh',
+		'Tiểu Dâm',
+		'Nhục Tiện',
+		'Nhục Tiện Khí',
+		'Âm Đạo',
+		'Nhũ Nhục',
+		'Nhục Động',
+		'Hiếp Dâm',
+		'Bắn Tinh',
+
+		// Từ không phải tên người
+		'Thôn Phệ',
+		'Huynh Đài',
+		'Đạo Hữu',
+		'Cô Nương',
+		'Tẩu Tử',
+		'Đại Ca',
+		'Đại Lão',
+		'Nữ Hiệp',
+		'Hắc Nhân',
+		'Kê Ba',
+		'Tẩy Não',
+		'Xúc Thủ',
+		'Mỹ Thối',
+		'Đại nhân',
+		'Hảo Thư',
+		'Ngận Khoái',
+		'Tòng Tha',
+		'Đại Kê',
+		// Thêm các từ cần lọc vào đây, mỗi từ đặt trong dấu nháy đơn và phân cách bằng dấu phẩy
+	],
+
+	// Danh sách họ hợp lệ - Đơn giản hóa thành mảng để dễ chỉnh sửa
+	validFamilyNames: [
+		// Họ phổ biến
+		'Liễu',
+		'Lý',
+		'Nguyễn',
+		'Trương',
+		'Vương',
+		'Lưu',
+		'Trần',
+		'Dương',
+		'Triệu',
+		'Hoàng',
+		'Chu',
+		'Ngô',
+		'Tôn',
+		'Lâm',
+		'Tống',
+		'Đặng',
+		'Hàn',
+		'Phùng',
+		'Thẩm',
+		'Tào',
+
+		// Họ thường gặp
+		'Diệp',
+		'Ngụy',
+		'Tiêu',
+		'Trình',
+		'Hứa',
+		'Đinh',
+		'Tô',
+		'Đỗ',
+		'Phạm',
+		'Tạ',
+		'Hồ',
+		'Từ',
+		'Quách',
+		'Cố',
+		'Nhiếp',
+		'Thái',
+		'Đào',
+		'Bành',
+		'Khổng',
+		'Văn',
+
+		// Họ ít gặp
+		'Nhâm',
+		'Phó',
+		'Nghiêm',
+		'Kiều',
+		'Bạch',
+		'Cung',
+		'Tiết',
+		'Kỷ',
+		'Thôi',
+		'Nhan',
+		'Phương',
+		'Phù',
+		'Doãn',
+		'Thi',
+		'Hoa',
+		'Giả',
+		'Tư',
+		'Mạc',
+		'Lạc',
+		'Bùi',
+
+		// Họ hiếm
+		'Châu',
+		'Đường',
+		'Giang',
+		'Hạ',
+		'La',
+		'Lăng',
+		'Lục',
+		'Mai',
+		'Mạnh',
+		'Nghê',
+		'Sở',
+		'Thủy',
+		'Thạch',
+		'Trác',
+		'Trịnh',
+		'Yến',
+		'Yên',
+		'Kế',
+		'Tá',
+		'Tần',
+
+		// Họ rất hiếm
+		'An',
+		'Biện',
+		'Chung',
+		'Đoàn',
+		'Hà',
+		'Khương',
+		'Lê',
+		'Lương',
+		'Mẫn',
+		'Ninh',
+		'Đàm',
+		'Cảnh',
+		'Chiêm',
+		'Đan',
+		'Đậu',
+		'Điền',
+		'Đổng',
+		'Đới',
+		'Hoa',
+		'Hoắc',
+
+		// Họ cực hiếm
+		'Lãnh',
+		'Lôi',
+		'Mạch',
+		'Mộc',
+		'Nhạc',
+		'Phi',
+		'Phong',
+		'Bối',
+		'Cốc',
+		'Hàn',
+		'Cúc',
+		'Vân',
+		'Mô',
+		'Mao',
+		'Quan',
+		'Sa',
+		'Lam',
+	],
 };
 
 // !!! CẢNH BÁO: KHÔNG CHỈNH SỬA CODE DƯỚI PHẦN NÀY !!!
@@ -85,14 +264,8 @@ function writeFile(filePath, content) {
 // Kiểm tra tên riêng
 function isProperName(word) {
 	if (!word || typeof word !== 'string') return false;
-
-	// Kiểm tra chữ cái đầu viết hoa
 	const firstChar = word.charAt(0);
-	if (firstChar !== firstChar.toUpperCase() || firstChar === firstChar.toLowerCase()) {
-		return false;
-	}
-
-	return true;
+	return firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase();
 }
 
 // Kiểm tra độ dài từ
@@ -103,32 +276,12 @@ function checkWordLength(word) {
 // Kiểm tra họ hợp lệ
 function hasValidFamilyName(words) {
 	if (!words || !words.length) return false;
-
-	// Kiểm tra họ đơn
-	if (config.FamilyName.has(words[0])) {
-		// Kiểm tra xem có phải là tên đơn lẻ không
-		if (words.length === 1) return false;
-		return true;
-	}
-
-	// Kiểm tra họ kép
-	if (words.length >= 2) {
-		const doubleFamilyName = words[0] + ' ' + words[1];
-		if (config.FamilyName.has(doubleFamilyName)) {
-			// Kiểm tra xem có phải là tên đơn lẻ không
-			if (words.length === 2) return false;
-			return true;
-		}
-	}
-
-	return false;
+	return config.validFamilyNames.includes(words[0]) && words.length > 1;
 }
 
 // Kiểm tra từ có trong blacklist không
 function isBlacklisted(name) {
-	return Array.from(config.blacklist).some(blacklistedWord => {
-		return name === blacklistedWord || name.includes(blacklistedWord);
-	});
+	return config.blacklistWords.some(word => name.includes(word));
 }
 
 // Đọc danh sách tên đã có từ Names.txt
@@ -157,8 +310,8 @@ function filterCharacterNames(content) {
 	if (!content) return { names: [], stats: {}, nameMap: new Map() };
 
 	const lines = content.split('\n');
-	const characterNames = new Set(); // Dùng Set để lưu tên duy nhất
-	const nameMap = new Map(); // Map để lưu tên Trung - Việt
+	const characterNames = new Set();
+	const nameMap = new Map();
 	const existingNames = getExistingNames();
 
 	const stats = {
@@ -185,19 +338,16 @@ function filterCharacterNames(content) {
 			continue;
 		}
 
-		// Kiểm tra xem tên đã tồn tại trong Names.txt chưa
 		if (existingNames.has(`${hanViet}=${phienAm}`)) {
 			stats.existingNames++;
 			continue;
 		}
 
-		// Kiểm tra blacklist
 		if (isBlacklisted(phienAm)) {
 			stats.blacklisted++;
 			continue;
 		}
 
-		// Kiểm tra độ dài
 		if (!checkWordLength(hanViet)) {
 			stats.filtered++;
 			continue;
@@ -205,34 +355,27 @@ function filterCharacterNames(content) {
 
 		const words = phienAm.split(' ');
 
-		// Kiểm tra có họ hợp lệ không
 		if (!hasValidFamilyName(words)) {
 			stats.filtered++;
 			continue;
 		}
 
-		// Kiểm tra tất cả các từ đều là tên riêng
 		const isValidName = words.every(word => isProperName(word));
 		if (!isValidName) {
 			stats.filtered++;
 			continue;
 		}
 
-		// Kiểm tra trùng lặp
 		if (characterNames.has(phienAm)) {
 			stats.duplicates++;
 			continue;
 		}
 
-		// Thêm tên vào Set để loại bỏ trùng lặp
 		characterNames.add(phienAm);
 		stats.validNames++;
-
-		// Lưu map tên Trung - Việt
 		nameMap.set(hanViet, phienAm);
 	}
 
-	// Chuyển Set thành mảng và sắp xếp theo alphabet
 	const sortedNames = Array.from(characterNames).sort();
 
 	return {
@@ -255,7 +398,6 @@ async function main() {
 	const content = readFile(inputPath);
 	const result = filterCharacterNames(content);
 
-	// Tạo nội dung output chỉ với tên Trung và Việt
 	const output = result.names.map(item => `${item.hanViet}=${item.name}`).join('\n');
 
 	writeFile(outputPath, output);
