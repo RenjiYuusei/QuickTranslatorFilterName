@@ -1,10 +1,10 @@
 /**
  * Tool lọc họ tên nhân vật từ file text
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.4.0
+ * Phiên bản: 1.5.0
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
- * Cập nhật: 04/12/2024
+ * Cập nhật: 28/12/2024
  * !!! CẢNH BÁO !!!
  * Đoạn code bên dưới phần config rất quan trọng,
  * nếu không biết code xin đừng chỉnh sửa vì sẽ gây lỗi tool.
@@ -15,21 +15,18 @@ const fs = require('fs');
 const path = require('path');
 
 const config = {
-	inputFile: './result_TheoTầnSuất_ViếtHoa.txt',
-	outputFile: './result_TênNhânVật.txt',
-	namesFile: './Names.txt',
-	errorLogFile: './error.log',
+	inputFile: 'result_TheoTầnSuất_ViếtHoa.txt',
+	outputFile: 'result_TênNhânVật.txt',
+	namesFile: 'Names.txt',
 	encoding: 'utf8',
 	minLength: 2,
-	maxLength: 3,
-	familyNamesFile: './data/familyNames.json',
-	blacklistFile: './data/blacklist.json',
+	maxLength: 4,
+	familyNamesFile: 'data/familyNames.json',
+	blacklistFile: 'data/blacklist.json',
 };
 
 function logError(error) {
-	const timestamp = new Date().toISOString();
-	const logMessage = `[${timestamp}] ${error.message}\n`;
-	fs.appendFileSync(config.errorLogFile, logMessage);
+	console.error(`❌ Lỗi: ${error.message}`);
 }
 
 function readFile(filePath) {
@@ -118,120 +115,70 @@ function filterCharacterNames(content) {
 	const characterNames = new Set();
 	const nameMap = new Map();
 	const existingNames = getExistingNames();
-
-	const stats = {
-		total: 0,
-		filtered: 0,
-		validNames: 0,
-		blacklisted: 0,
-		duplicates: 0,
-		existingNames: 0,
-	};
+	const stats = { total: 0, valid: 0, invalid: 0 };
 
 	for (const line of lines) {
 		stats.total++;
-		const trimmedLine = line.trim();
+		const [hanViet, phienAm] = line
+			.trim()
+			.split('=')
+			.map(s => s?.trim());
 
-		if (!trimmedLine) {
-			stats.filtered++;
-			continue;
-		}
-
-		const [hanViet, phienAm] = trimmedLine.split('=').map(s => s.trim());
-		if (!phienAm || !hanViet) {
-			stats.filtered++;
-			continue;
-		}
-
-		if (existingNames.has(`${hanViet}=${phienAm}`)) {
-			stats.existingNames++;
-			continue;
-		}
-
-		if (isBlacklisted(phienAm)) {
-			stats.blacklisted++;
-			continue;
-		}
-
-		if (!checkWordLength(hanViet)) {
-			stats.filtered++;
-			continue;
-		}
-
-		const words = phienAm.split(' ');
-
-		if (!hasValidFamilyName(words)) {
-			stats.filtered++;
-			continue;
-		}
-
-		const isValidName = words.every(word => isProperName(word));
-		if (!isValidName) {
-			stats.filtered++;
-			continue;
-		}
-
-		if (characterNames.has(phienAm)) {
-			stats.duplicates++;
+		if (!isValidEntry(hanViet, phienAm, existingNames)) {
+			stats.invalid++;
 			continue;
 		}
 
 		characterNames.add(phienAm);
-		stats.validNames++;
+		stats.valid++;
 		nameMap.set(hanViet, phienAm);
 	}
 
-	const sortedNames = Array.from(characterNames).sort();
-
 	return {
-		names: sortedNames.map(name => ({
-			name,
-			hanViet: Array.from(nameMap.entries()).find(([_, value]) => value === name)?.[0],
-		})),
+		names: Array.from(characterNames)
+			.sort()
+			.map(name => ({
+				name,
+				hanViet: Array.from(nameMap.entries()).find(([_, value]) => value === name)?.[0],
+			})),
 		stats,
 		nameMap,
 	};
 }
 
+function isValidEntry(hanViet, phienAm, existingNames) {
+	if (!phienAm || !hanViet || existingNames.has(`${hanViet}=${phienAm}`)) {
+		return false;
+	}
+
+	if (!checkWordLength(hanViet) || isBlacklisted(phienAm)) {
+		return false;
+	}
+
+	const words = phienAm.split(' ');
+	return hasValidFamilyName(words) && words.every(isProperName);
+}
+
 async function main() {
-	console.clear();
-	console.log('\n');
-	console.log('╔═══════════════════════════════════════════════════════════════════════════╗');
-	console.log('║                          TOOL LỌC TÊN NHÂN VẬT                           ║');
-	console.log('║                             Made by Yuusei                               ║');
-	console.log('╚═══════════════════════════════════════════════════════════════════════════╝\n');
+	console.log('🔄 Đang xử lý...');
 
-	console.log('🚀 Đang khởi động công cụ...');
-	console.time('⏱️  Thời gian xử lý');
+	try {
+		const content = readFile(config.inputFile);
+		const result = filterCharacterNames(content);
 
-	const inputPath = path.resolve(config.inputFile);
-	const outputPath = path.resolve(config.outputFile);
+		const output = result.names.map(item => `${item.hanViet}=${item.name}`).join('\n');
 
-	console.log('📖 Đang đọc dữ liệu...');
-	const content = readFile(inputPath);
-	console.log('✅ Đã đọc xong dữ liệu\n');
+		writeFile(config.outputFile, output);
 
-	console.log('🔍 Đang lọc tên...');
-	const result = filterCharacterNames(content);
-	console.log('✅ Đã lọc xong\n');
-
-	console.log('💾 Đang lưu kết quả...');
-	const output = result.names.map(item => `${item.hanViet}=${item.name}`).join('\n');
-	writeFile(outputPath, output);
-	console.log('✅ Đã lưu xong\n');
-
-	console.timeEnd('⏱️  Thời gian xử lý');
-	console.log('\n📊 Thống kê:');
-	console.log(`📝 Tổng số dòng     : ${result.stats.total}`);
-	console.log(`🔍 Số dòng đã lọc   : ${result.stats.filtered}`);
-	console.log(`⛔ Từ trong blacklist: ${result.stats.blacklisted}`);
-	console.log(`🔄 Tên trùng lặp    : ${result.stats.duplicates}`);
-	console.log(`📚 Tên đã tồn tại   : ${result.stats.existingNames}`);
-	console.log(`✅ Tên hợp lệ       : ${result.stats.validNames}`);
-	console.log(`🎯 Tên còn lại      : ${result.names.length}\n`);
-
-	console.log('✨ Hoàn thành! Kết quả đã được lưu vào:');
-	console.log(`📁 ${outputPath}\n`);
+		console.log('\n📊 Kết quả:');
+		console.log(`✓ Tổng số dòng: ${result.stats.total}`);
+		console.log(`✓ Hợp lệ: ${result.stats.valid}`);
+		console.log(`✓ Không hợp lệ: ${result.stats.invalid}`);
+		console.log(`\n✨ Đã lưu kết quả vào: ${config.outputFile}\n`);
+	} catch (err) {
+		logError(err);
+		process.exit(1);
+	}
 }
 
 main().catch(err => {
