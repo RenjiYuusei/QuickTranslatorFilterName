@@ -1,64 +1,68 @@
 name: Update Version
 
 on:
-  push:
-    paths:
-      - 'filter.js'
-      - 'filter.py'
-    branches:
-      - main
+    push:
+        paths:
+            - 'filter.js'
+            - 'filter.py'
+        branches:
+            - main
 
 jobs:
-  update-version:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4.2.2
-        with:
-          fetch-depth: 0
-      
-      - name: Extract version from files
-        id: get-version
-        run: |
-          # Lấy phiên bản từ filter.js
-          if [ -f filter.js ]; then
-            JS_VERSION=$(grep -oP "(?<=Phiên bản: ).*" filter.js | tr -d '\r')
-            echo "js_version=$JS_VERSION" >> $GITHUB_OUTPUT
-          fi
-          
-          # Lấy phiên bản từ filter.py  
-          if [ -f filter.py ]; then
-            PY_VERSION=$(grep -oP "(?<=Phiên bản: ).*" filter.py | tr -d '\r')
-            echo "py_version=$PY_VERSION" >> $GITHUB_OUTPUT
-          fi
-          
-          # So sánh và lấy phiên bản cao nhất
-          if [ ! -z "$JS_VERSION" ] && [ ! -z "$PY_VERSION" ]; then
-            # Chuyển đổi chuỗi phiên bản thành số để so sánh
-            JS_VER=$(echo $JS_VERSION | sed 's/\.//g')
-            PY_VER=$(echo $PY_VERSION | sed 's/\.//g')
-            
-            if [ $JS_VER -gt $PY_VER ]; then
-              echo "version=$JS_VERSION" >> $GITHUB_OUTPUT
-            else
-              echo "version=$PY_VERSION" >> $GITHUB_OUTPUT
-            fi
-          elif [ ! -z "$JS_VERSION" ]; then
-            echo "version=$JS_VERSION" >> $GITHUB_OUTPUT
-          elif [ ! -z "$PY_VERSION" ]; then
-            echo "version=$PY_VERSION" >> $GITHUB_OUTPUT
-          fi
+    update-version:
+        runs-on: ubuntu-latest
 
-      - name: Update README.md version
-        if: steps.get-version.outputs.version != ''
-        run: |
-          VERSION="${{ steps.get-version.outputs.version }}"
-          sed -i "s/version-.*-blue/version-$VERSION-blue/" README.md
-          
-      - name: Commit changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add README.md
-          git commit -m "chore: Cập nhật phiên bản trong README.md" || echo "No changes to commit"
-          git push
+        steps:
+            - uses: actions/checkout@v4.2.2
+              with:
+                  fetch-depth: 0
+
+            - name: Extract version from files
+              id: get-version
+              run: |
+                  # Lấy phiên bản từ filter.js
+                  if [ -f filter.js ]; then
+                    JS_VERSION=$(grep -oP "(?<=Phiên bản: ).*" filter.js | tr -d '\r' | xargs)
+                    if [ ! -z "$JS_VERSION" ]; then
+                      echo "js_version=$JS_VERSION" >> "$GITHUB_OUTPUT"
+                    fi
+                  fi
+
+                  # Lấy phiên bản từ filter.py  
+                  if [ -f filter.py ]; then
+                    PY_VERSION=$(grep -oP "(?<=Phiên bản: ).*" filter.py | tr -d '\r' | xargs)
+                    if [ ! -z "$PY_VERSION" ]; then
+                      echo "py_version=$PY_VERSION" >> "$GITHUB_OUTPUT" 
+                    fi
+                  fi
+
+                  # So sánh và lấy phiên bản cao nhất
+                  if [ ! -z "${JS_VERSION:-}" ] && [ ! -z "${PY_VERSION:-}" ]; then
+                    # Chuyển đổi chuỗi phiên bản thành số để so sánh
+                    JS_VER=$(echo "$JS_VERSION" | sed 's/\.//g')
+                    PY_VER=$(echo "$PY_VERSION" | sed 's/\.//g')
+                    
+                    if [ "$JS_VER" -gt "$PY_VER" ]; then
+                      echo "version=$JS_VERSION" >> "$GITHUB_OUTPUT"
+                    else
+                      echo "version=$PY_VERSION" >> "$GITHUB_OUTPUT"
+                    fi
+                  elif [ ! -z "${JS_VERSION:-}" ]; then
+                    echo "version=$JS_VERSION" >> "$GITHUB_OUTPUT"
+                  elif [ ! -z "${PY_VERSION:-}" ]; then
+                    echo "version=$PY_VERSION" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Update README.md version
+              if: steps.get-version.outputs.version != ''
+              run: |
+                  VERSION="${{ steps.get-version.outputs.version }}"
+                  sed -i "s/version-.*-blue/version-$VERSION-blue/" README.md
+
+            - name: Commit changes
+              run: |
+                  git config --local user.email "action@github.com"
+                  git config --local user.name "GitHub Action"
+                  git add README.md
+                  git commit -m "chore: Cập nhật phiên bản trong README.md" || echo "No changes to commit"
+                  git push
