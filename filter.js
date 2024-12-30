@@ -1,10 +1,10 @@
 /**
- * Tool lọc họ tên nhân vật từ file text
+ * Tool lọc họ tên nhân vật từ tệp tin văn bản
  * Hỗ trợ cho QuickTranslate - TangThuVien
- * Phiên bản: 1.5.0
+ * Phiên bản: 1.6.0
  * Tác giả: Đoàn Đình Hoàng
  * Liên hệ: daoluc.yy@gmail.com
- * Cập nhật: 28/12/2024
+ * Cập nhật: 29/12/2024
  * !!! CẢNH BÁO !!!
  * Đoạn code bên dưới phần config rất quan trọng,
  * nếu không biết code xin đừng chỉnh sửa vì sẽ gây lỗi tool.
@@ -13,28 +13,28 @@
 
 const fs = require('fs');
 const path = require('path');
+const startTime = Date.now();
+const runtime = typeof Bun !== 'undefined' ? 'Bun' : 'Node.js';
 
 const config = {
-	inputFile: 'result_TheoTầnSuất_ViếtHoa.txt',
-	outputFile: 'result_TênNhânVật.txt',
-	namesFile: 'Names.txt',
-	encoding: 'utf8',
-	minLength: 2,
-	maxLength: 4,
-	familyNamesFile: 'data/familyNames.json',
-	blacklistFile: 'data/blacklist.json',
+	inputFile: 'result_TheoTầnSuất_ViếtHoa.txt', // File đầu vào
+	outputFile: 'result_TênNhânVật.txt', // File đầu ra
+	namesFile: 'Names.txt', // File tên đã tồn tại
+	encoding: 'utf8', // Định dạng file
+	minLength: 2, // Độ dài tối thiểu của tên
+	maxLength: 3, // Độ dài tối đa của tên (tối đa 3 ký tự)
+	familyNamesFile: 'data/familyNames.json', // File họ tên
+	blacklistFile: 'data/blacklist.json', // File blacklist
 };
 
-function logError(error) {
-	console.error(`❌ Lỗi: ${error.message}`);
-}
-
-function readFile(filePath) {
+async function readFile(filePath) {
 	try {
 		if (!fs.existsSync(filePath)) {
 			throw new Error(`File không tồn tại: ${filePath}`);
 		}
-		return fs.readFileSync(filePath, config.encoding);
+
+		const content = fs.readFileSync(filePath, config.encoding);
+		return content;
 	} catch (err) {
 		logError(err);
 		console.log('❌ Lỗi khi đọc file:', err.message);
@@ -42,7 +42,22 @@ function readFile(filePath) {
 	}
 }
 
-function writeFile(filePath, content) {
+async function readJsonFile(filePath) {
+	try {
+		if (!fs.existsSync(filePath)) {
+			throw new Error(`File không tồn tại: ${filePath}`);
+		}
+
+		const content = fs.readFileSync(filePath, config.encoding);
+		return JSON.parse(content);
+	} catch (err) {
+		logError(err);
+		console.log(`❌ Lỗi khi đọc file ${filePath}:`, err.message);
+		process.exit(1);
+	}
+}
+
+async function writeFile(filePath, content) {
 	try {
 		const dir = path.dirname(filePath);
 		if (!fs.existsSync(dir)) {
@@ -52,131 +67,101 @@ function writeFile(filePath, content) {
 	} catch (err) {
 		logError(err);
 		console.log('❌ Lỗi khi ghi file:', err.message);
-		process.exit(1);
 	}
 }
 
-function isProperName(word) {
-	if (!word || typeof word !== 'string') return false;
-	const firstChar = word.charAt(0);
-	return firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase();
-}
+function filter_character_names(content) {
+	if (!content || typeof content !== 'string') {
+		throw new Error('Dữ liệu đầu vào không hợp lệ');
+	}
 
-function checkWordLength(word) {
-	return word && word.length >= config.minLength && word.length <= config.maxLength;
-}
-
-function loadJsonFile(filePath) {
+	// Đọc blacklist
+	let blacklist = [];
 	try {
-		const content = readFile(filePath);
-		return JSON.parse(content);
+		const blacklistData = fs.readFileSync(config.blacklistFile, config.encoding);
+		const blacklistJson = JSON.parse(blacklistData);
+		blacklist = blacklistJson.blacklistWords || [];
 	} catch (err) {
-		logError(err);
-		console.log(`❌ Lỗi khi đọc file ${filePath}:`, err.message);
-		process.exit(1);
+		console.log('⚠️ Không thể đọc blacklist, tiếp tục với danh sách trống');
 	}
-}
-
-function hasValidFamilyName(words) {
-	if (!words || !words.length) return false;
-	const { validFamilyNames } = loadJsonFile(config.familyNamesFile);
-	return validFamilyNames.includes(words[0]) && words.length > 1;
-}
-
-function isBlacklisted(name) {
-	const { blacklistWords } = loadJsonFile(config.blacklistFile);
-	return blacklistWords.some(word => name.includes(word));
-}
-
-function getExistingNames() {
-	try {
-		const namesContent = readFile(config.namesFile);
-		const existingNames = new Set();
-		const lines = namesContent.split('\n');
-
-		for (const line of lines) {
-			const [hanViet, phienAm] = line.split('=').map(s => s?.trim());
-			if (hanViet && phienAm) {
-				existingNames.add(`${hanViet}=${phienAm}`);
-			}
-		}
-
-		return existingNames;
-	} catch (err) {
-		console.log('⚠️ Không tìm thấy file Names.txt hoặc file rỗng');
-		return new Set();
-	}
-}
-
-function filterCharacterNames(content) {
-	if (!content) return { names: [], stats: {}, nameMap: new Map() };
 
 	const lines = content.split('\n');
-	const characterNames = new Set();
-	const nameMap = new Map();
-	const existingNames = getExistingNames();
+	const names = [];
 	const stats = { total: 0, valid: 0, invalid: 0 };
+
+	// Đọc Names.txt nếu tồn tại
+	let existingNames = new Set();
+	try {
+		if (fs.existsSync(config.namesFile)) {
+			const namesContent = fs.readFileSync(config.namesFile, config.encoding);
+			if (namesContent.trim()) {
+				existingNames = new Set(
+					namesContent.split('\n').map(line => {
+						const parts = line.split('=');
+						return parts[0]?.trim() || '';
+					})
+				);
+			} else {
+				console.log('⚠️ File Names.txt rỗng');
+			}
+		} else {
+			console.log('⚠️ Không tìm thấy file Names.txt hoặc file rỗng');
+		}
+	} catch (err) {
+		console.log('⚠️ Lỗi khi đọc Names.txt:', err.message);
+	}
 
 	for (const line of lines) {
 		stats.total++;
-		const [hanViet, phienAm] = line
-			.trim()
-			.split('=')
-			.map(s => s?.trim());
-
-		if (!isValidEntry(hanViet, phienAm, existingNames)) {
+		const parts = line.split('=');
+		if (parts.length !== 2) {
 			stats.invalid++;
 			continue;
 		}
 
-		characterNames.add(phienAm);
+		const hanViet = parts[0].trim();
+		const name = parts[1].trim();
+
+		// Kiểm tra điều kiện
+		if (!hanViet || !name || name.length < config.minLength || name.length > config.maxLength || blacklist.some(word => name.includes(word)) || existingNames.has(hanViet)) {
+			stats.invalid++;
+			continue;
+		}
+
+		names.push({ hanViet, name });
 		stats.valid++;
-		nameMap.set(hanViet, phienAm);
 	}
 
-	return {
-		names: Array.from(characterNames)
-			.sort()
-			.map(name => ({
-				name,
-				hanViet: Array.from(nameMap.entries()).find(([_, value]) => value === name)?.[0],
-			})),
-		stats,
-		nameMap,
-	};
+	return { names, stats };
 }
 
-function isValidEntry(hanViet, phienAm, existingNames) {
-	if (!phienAm || !hanViet || existingNames.has(`${hanViet}=${phienAm}`)) {
-		return false;
-	}
-
-	if (!checkWordLength(hanViet) || isBlacklisted(phienAm)) {
-		return false;
-	}
-
-	const words = phienAm.split(' ');
-	return hasValidFamilyName(words) && words.every(isProperName);
+function logError(err) {
+	console.error('🔥 Lỗi:', err);
 }
 
 async function main() {
+	console.log(`🚀 Đang chạy với: ${runtime}`);
 	console.log('🔄 Đang xử lý...');
 
 	try {
-		const content = readFile(config.inputFile);
-		const result = filterCharacterNames(content);
+		const content = await readFile(config.inputFile);
+		const result = filter_character_names(content);
 
 		const output = result.names.map(item => `${item.hanViet}=${item.name}`).join('\n');
+		await writeFile(config.outputFile, output);
 
-		writeFile(config.outputFile, output);
+		const endTime = Date.now();
+		const executionTime = (endTime - startTime) / 1000;
 
 		console.log('\n📊 Kết quả:');
 		console.log(`✓ Tổng số dòng: ${result.stats.total}`);
 		console.log(`✓ Hợp lệ: ${result.stats.valid}`);
 		console.log(`✓ Không hợp lệ: ${result.stats.invalid}`);
-		console.log(`\n✨ Đã lưu kết quả vào: ${config.outputFile}\n`);
+		console.log(`\n✨ Đã lưu kết quả vào: ${config.outputFile}`);
+		console.log(`⏱️ Thời gian xử lý: ${executionTime.toFixed(3)} giây\n`);
 	} catch (err) {
 		logError(err);
+		console.log(`❌ Lỗi: ${err.message}`);
 		process.exit(1);
 	}
 }
@@ -184,6 +169,5 @@ async function main() {
 main().catch(err => {
 	logError(err);
 	console.log(`❌ Lỗi: ${err.message}`);
-	console.log('💡 Vui lòng kiểm tra file error.log để biết thêm chi tiết.');
 	process.exit(1);
 });

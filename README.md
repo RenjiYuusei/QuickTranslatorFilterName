@@ -2,9 +2,10 @@
 
 > 🔍 Tool lọc tên nhân vật từ file text cho QuickTranslate - TangThuVien 📚
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/RenjiYuusei/QuickTranslatorFilterName)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/RenjiYuusei/QuickTranslatorFilterName)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Bun](https://img.shields.io/badge/bun-%3E%3D1.0.0-brightgreen.svg)](https://bun.sh/)
 
 ## 👨‍💻 Tác giả
 
@@ -18,11 +19,11 @@
 -   🔄 Loại bỏ trùng lặp và sắp xếp theo alphabet
 -   📊 Thống kê kết quả xử lý chi tiết
 
-## 🚀 Cài đặt
+## 🔮 Tương thích
 
-1. 📥 Cài đặt [Node.js](https://nodejs.org/en/download/) (phiên bản 18 trở lên)
-2. ⚡ Tải và cài đặt Node.js về máy
-3. 🔗 Clone repository này về máy
+-   Bun
+-   Node.js
+-   Python
 
 ## 🎮 Chạy Tool
 
@@ -42,14 +43,4 @@ node filter.js
 
 ## 🎉 Lịch Sử Cập Nhật 🚀
 
--   ✨ Phiên Bản 1.4.0:
-
-    -   Cải thiện giao diện console
-    -   Di chuyển blacklist và familyname qua data `./data/blacklist.json` và `./data/familyNames.json`
-    -   Sửa lỗi khi ghi file `result_TênNhânVật.txt`
-
--   ✨ Phiên Bản 1.3.0:
-    -   🔍 Thông minh hơn với khả năng kiểm tra và bỏ qua tên đã tồn tại trong Names.txt
-    -   📊 Bổ sung tính năng phân tích và lọc tên theo tần suất xuất hiện
-    -   🛠️ Khắc phục các lỗi trong quá trình lọc tên
-    -   🎯 Tối ưu hóa bộ lọc bằng cách loại bỏ regex và cải thiện chuẩn hóa tên
+-   Xem [Changelog](CHANGELOG.MD)
