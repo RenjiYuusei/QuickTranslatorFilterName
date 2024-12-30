@@ -36,9 +36,8 @@ async function readFile(filePath) {
 		const content = fs.readFileSync(filePath, config.encoding);
 		return content;
 	} catch (err) {
-		logError(err);
-		console.log('❌ Lỗi khi đọc file:', err.message);
-		process.exit(1);
+		await logError(err);
+		return null;
 	}
 }
 
@@ -135,8 +134,61 @@ function filter_character_names(content) {
 	return { names, stats };
 }
 
+function openIssueURL(error) {
+	const issueTitle = encodeURIComponent(`Lỗi: ${error.message}`);
+	const issueBody = encodeURIComponent(`
+**Mô tả lỗi:**
+\`\`\`
+${error.stack}
+\`\`\`
+
+**Thông tin hệ thống:**
+- Runtime: ${runtime}
+- Phiên bản: 1.6.0
+`);
+	const url = `https://github.com/RenjiYuusei/QuickTranslatorFilterName/issues/new?title=${issueTitle}&body=${issueBody}`;
+
+	try {
+		// Mở URL với phương thức phù hợp theo runtime và hệ điều hành
+		if (process.platform === 'win32') {
+			require('child_process').exec(`start "" "${url}"`);
+		} else if (runtime === 'Bun') {
+			Bun.spawn(['open', url]);
+		} else {
+			require('child_process').exec(`xdg-open "${url}"`);
+		}
+		console.log('🔗 Đang mở trang báo cáo lỗi...');
+	} catch (err) {
+		console.error('❌ Không thể mở trình duyệt:', err.message);
+	}
+}
+
 function logError(err) {
 	console.error('🔥 Lỗi:', err);
+	return new Promise(resolve => {
+		const readline = require('readline').createInterface({
+			input: process.stdin,
+			output: process.stdout,
+		});
+
+		readline.question('❌ Đã xảy ra lỗi. Bạn có muốn báo cáo lỗi này không? (y/n): ', answer => {
+			readline.close();
+			if (answer.toLowerCase() === 'y') {
+				openIssueURL(err);
+				// Đợi lâu hơn trên Windows
+				setTimeout(
+					() => {
+						resolve();
+						process.exit(1);
+					},
+					process.platform === 'win32' ? 2000 : 1000
+				);
+			} else {
+				resolve();
+				process.exit(1);
+			}
+		});
+	});
 }
 
 async function main() {
@@ -145,6 +197,8 @@ async function main() {
 
 	try {
 		const content = await readFile(config.inputFile);
+		if (!content) return;
+
 		const result = filter_character_names(content);
 
 		const output = result.names.map(item => `${item.hanViet}=${item.name}`).join('\n');
@@ -160,14 +214,10 @@ async function main() {
 		console.log(`\n✨ Đã lưu kết quả vào: ${config.outputFile}`);
 		console.log(`⏱️ Thời gian xử lý: ${executionTime.toFixed(3)} giây\n`);
 	} catch (err) {
-		logError(err);
-		console.log(`❌ Lỗi: ${err.message}`);
-		process.exit(1);
+		await logError(err);
 	}
 }
 
-main().catch(err => {
-	logError(err);
-	console.log(`❌ Lỗi: ${err.message}`);
-	process.exit(1);
+main().catch(async err => {
+	await logError(err);
 });

@@ -16,6 +16,9 @@ import json
 import sys
 from typing import Dict, List, Set, Tuple, Optional
 import time
+import webbrowser
+from urllib.parse import quote
+
 config = {
     'inputFile': 'result_TheoTầnSuất_ViếtHoa.txt', # File đầu vào
     'outputFile': 'result_TênNhânVật.txt', # File đầu ra
@@ -29,8 +32,16 @@ config = {
 
 def log_error(error: Exception) -> None:
     print(f"❌ Lỗi: {str(error)}")
+    try:
+        user_input = input('❌ Đã xảy ra lỗi. Bạn có muốn báo cáo lỗi này không? (y/n): ')
+        if user_input.lower() == 'y':
+            open_issue_url(error)
+            # Đợi lâu hơn trên Windows để đảm bảo URL được mở
+            time.sleep(2 if sys.platform == 'win32' else 1)
+    finally:
+        sys.exit(1)
 
-def read_file(file_path: str) -> str:
+def read_file(file_path: str) -> Optional[str]:
     try:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File không tồn tại: {file_path}")
@@ -38,8 +49,7 @@ def read_file(file_path: str) -> str:
             return f.read()
     except Exception as err:
         log_error(err)
-        print('❌ Lỗi khi đọc file:', str(err))
-        sys.exit(1)
+        return None
 
 def write_file(file_path: str, content: str) -> None:
     try:
@@ -154,6 +164,33 @@ def filter_character_names(content: str) -> Dict:
 
     return {'names': names, 'stats': stats, 'nameMap': name_map}
 
+def open_issue_url(error: Exception) -> None:
+    issue_title = quote(f"Lỗi: {str(error)}")
+    issue_body = quote(f"""
+**Mô tả lỗi:**
+```
+{str(error)}
+```
+
+**Thông tin hệ thống:**
+- Runtime: Python {sys.version}
+- Phiên bản: 1.6.0
+""")
+    url = f"https://github.com/RenjiYuusei/QuickTranslatorFilterName/issues/new?title={issue_title}&body={issue_body}"
+    
+    try:
+        # Thử mở URL với webbrowser
+        if webbrowser.open(url):
+            print('🔗 Đang mở trang báo cáo lỗi...')
+            # Đợi lâu hơn trên Windows
+            time.sleep(2 if sys.platform == 'win32' else 1)
+        else:
+            raise Exception("Không thể mở trình duyệt mặc định")
+    except Exception as e:
+        print(f"❌ Không thể mở trình duyệt: {str(e)}")
+        # Hiển thị URL để người dùng có thể copy
+        print(f"🔗 Vui lòng copy URL sau và mở trong trình duyệt:\n{url}")
+
 def main():
     print('🔄 Đang xử lý...')
     
@@ -161,6 +198,9 @@ def main():
     
     try:
         content = read_file(config['inputFile'])
+        if not content:  # Kiểm tra nếu không có nội dung
+            return
+            
         result = filter_character_names(content)
 
         output = '\n'.join(f"{item['hanViet']}={item['name']}" for item in result['names'])

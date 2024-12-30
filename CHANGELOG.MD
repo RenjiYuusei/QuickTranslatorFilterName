@@ -1,9 +1,15 @@
 # Changelog
 
+-   ✨ Phiên Bản 1.6.0:
+
+    -   Thêm tự động báo cáo lỗi
+    -   🐛 Sửa lỗi báo cáo lỗi trên Windows
+
 -   ✨ Phiên Bản 1.5.0:
--   Tương thích với Bun
--   Thêm hỗ trợ python
--   Đơn giản giao diện console
+
+    -   Tương thích với Bun
+    -   Thêm hỗ trợ python
+    -   Đơn giản giao diện console
 
 -   ✨ Phiên Bản 1.4.0:
 
